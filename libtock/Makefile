@@ -9,4 +9,7 @@ $(LIBNAME)_DIR := $(TOCK_USERLAND_BASE_DIR)/$(LIBNAME)
 # List all C and Assembly files
 $(LIBNAME)_SRCS  := $(wildcard $($(LIBNAME)_DIR)/internal/*.c) $(wildcard $($(LIBNAME)_DIR)/*.c) $(wildcard $($(LIBNAME)_DIR)/*.s)
 
+# List all required libraries needed to build this library.
+REQUIRED_LIBRARIES := newlib
+
 include $(TOCK_USERLAND_BASE_DIR)/TockLibrary.mk

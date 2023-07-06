@@ -15,6 +15,9 @@ include $(TOCK_USERLAND_BASE_DIR)/Configuration.mk
 # Helper functions.
 include $(TOCK_USERLAND_BASE_DIR)/Helpers.mk
 
+# Targets for fetching pre-compiled libraries.
+include $(TOCK_USERLAND_BASE_DIR)/Precompiled.mk
+
 $(call check_defined, LIBNAME)
 $(call check_defined, $(LIBNAME)_DIR)
 $(call check_defined, $(LIBNAME)_SRCS)
@@ -123,7 +126,7 @@ $(LIBNAME)_OBJS_$(1) += $$(patsubst %.cxx,$$($(LIBNAME)_BUILDDIR)/$(1)/%.o,$$(fi
 # $$(info $(LIBNAME)_OBJS_$(1): $$($(LIBNAME)_OBJS_$(1)))
 # $$(info =====================================================)
 
-$$($(LIBNAME)_BUILDDIR)/$(1)/$(LIBNAME).a: $$($(LIBNAME)_OBJS_$(1)) | $$($(LIBNAME)_BUILDDIR)/$(1)
+$$($(LIBNAME)_BUILDDIR)/$(1)/$(LIBNAME).a: $$($(LIBNAME)_OBJS_$(1)) | $$($(LIBNAME)_BUILDDIR)/$(1) $(REQUIRED_LIBRARIES)
 	$$(TRACE_AR)
 	$$(Q)$$(TOOLCHAIN_$(1))$$(AR) rc $$@ $$^
 	$$(Q)$$(TOOLCHAIN_$(1))$$(RANLIB) $$@

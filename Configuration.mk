@@ -27,6 +27,10 @@ RANLIB := -ranlib
 READELF := -readelf
 SIZE := -size
 
+# Library versions.
+NEWLIB_VERSION ?= 4.3.0.20230120
+LIBCPP_VERSION ?= 12.2.0
+
 # Set default region sizes for process memory requirements.
 STACK_SIZE       ?= 2048
 APP_HEAP_SIZE    ?= 1024
@@ -56,17 +60,6 @@ PACKAGE_NAME ?= $(shell basename "$(shell pwd)")
 # 3. (Optional) The address to use as the fixed start of flash.
 # 4. (Optional) The address to use as the fixed start of RAM.
 #
-# By default we currently only build the Cortex-M targets. To enable the RISC-V
-# targets, set the RISCV variable like so:
-#
-#     $ make RISCV=1
-#
-# Once the RV32 toolchain distribution stabilizes (as of June 2020 the toolchain
-# isn't as easily obtained as we would like), we intend to make the RISC-V
-# targets build by default as well.
-ifeq ($(RISCV),)
-TOCK_TARGETS ?= cortex-m0 cortex-m3 cortex-m4 cortex-m7
-else
 # Specific addresses useful for the OpenTitan hardware memory map.
 OPENTITAN_TOCK_TARGETS := rv32imc|rv32imc.0x20030080.0x10005000|0x20030080|0x10005000\
                           rv32imc|rv32imc.0x20030880.0x10008000|0x20030880|0x10008000\
@@ -92,7 +85,6 @@ TOCK_TARGETS ?= cortex-m0\
                 rv32imc|rv32imc.0x00080080.0x40008000|0x00080080|0x40008000\
                 $(OPENTITAN_TOCK_TARGETS) \
                 $(ARTY_E21_TOCK_TARGETS)
-endif
 
 # Generate `TOCK_ARCH_FAMILIES`, the set of architecture families which will be
 # used to determine toolchains to use in the build process.
@@ -132,6 +124,15 @@ ifndef ELF2TAB_EXISTS
     $(error Failed to automatically update elf2tab, please update manually elf2tab to >= $(ELF2TAB_REQUIRED_VERSION))
   endif
 endif
+
+################################################################################
+##
+## Helpful paths for all platforms
+##
+################################################################################
+
+override NEWLIB_BASE_DIR := $(TOCK_USERLAND_BASE_DIR)/lib/libtock-newlib-$(NEWLIB_VERSION)
+override LIBCPP_BASE_DIR := $(TOCK_USERLAND_BASE_DIR)/lib/libtock-libc++-$(LIBCPP_VERSION)
 
 ################################################################################
 ##
@@ -188,6 +189,9 @@ OBJDUMP_FLAGS += --disassemble-all --source -C --section-headers
 # Use a generic linker script for all libtock-c apps.
 LAYOUT ?= $(TOCK_USERLAND_BASE_DIR)/userland_generic.ld
 
+# Include libc headers for all platforms.
+override CPPFLAGS += -I$(NEWLIB_BASE_DIR)/headers
+
 # Various flags for a specific toolchain. Different compilers may have different
 # supported features. For GCC we warn if the compiler estimates the stack usage
 # will be greater than the allocated stack size.
@@ -224,9 +228,8 @@ else ifneq (,$(shell which riscv64-unknown-elf-clang 2>/dev/null))
 else ifneq (,$(shell which riscv32-unknown-elf-clang 2>/dev/null))
   TOOLCHAIN_rv32i := riscv32-unknown-elf
 else
-  # Fallback option. We don't particularly want to throw an error (even if
-  # RISCV=1 is set) as this configuration makefile can be useful without a
-  # proper toolchain.
+  # Fallback option. We don't particularly want to throw an error as this
+  # configuration makefile can be useful without a proper toolchain.
   TOOLCHAIN_rv32i := riscv64-unknown-elf
 endif
 TOOLCHAIN_rv32imac := $(TOOLCHAIN_rv32i)
@@ -295,29 +298,26 @@ override WLFLAGS_rv32i    += $(WLFLAGS_rv32)
 override WLFLAGS_rv32imc  += $(WLFLAGS_rv32)
 override WLFLAGS_rv32imac += $(WLFLAGS_rv32)
 
-# Set the system libraries we link against for RISC-V. We support C++ apps by
-# default.
-override LINK_LIBS_rv32 += \
-      -lgcc -lstdc++ -lsupc++
+override LINK_LIBS_rv32i    += \
+      $(LIBCPP_BASE_DIR)/riscv/rv32i/ilp32/libstdc++-v3/src/.libs/libstdc++.a \
+      $(LIBCPP_BASE_DIR)/riscv/rv32i/ilp32/libstdc++-v3/libsupc++/.libs/libsupc++.a \
+      $(LIBCPP_BASE_DIR)/riscv/rv32i/ilp32/libgcc/libgcc.a \
+      $(NEWLIB_BASE_DIR)/riscv/rv32i/ilp32/newlib/libc.a \
+      $(NEWLIB_BASE_DIR)/riscv/rv32i/ilp32/newlib/libm.a
 
-override LINK_LIBS_rv32i    += $(LINK_LIBS_rv32)
-override LINK_LIBS_rv32imc  += $(LINK_LIBS_rv32)
-override LINK_LIBS_rv32imac += $(LINK_LIBS_rv32)
+override LINK_LIBS_rv32imc  += \
+      $(LIBCPP_BASE_DIR)/riscv/rv32im/ilp32/libstdc++-v3/src/.libs/libstdc++.a \
+      $(LIBCPP_BASE_DIR)/riscv/rv32im/ilp32/libstdc++-v3/libsupc++/.libs/libsupc++.a \
+      $(LIBCPP_BASE_DIR)/riscv/rv32im/ilp32/libgcc/libgcc.a \
+      $(NEWLIB_BASE_DIR)/riscv/rv32im/ilp32/newlib/libc.a \
+      $(NEWLIB_BASE_DIR)/riscv/rv32im/ilp32/newlib/libm.a
 
-# Use precompiled libaries we provide to link against.
-override LEGACY_LIBS_rv32i += \
-      $(TOCK_USERLAND_BASE_DIR)/newlib/rv32/rv32i/libc.a\
-      $(TOCK_USERLAND_BASE_DIR)/newlib/rv32/rv32i/libm.a
-
-override LEGACY_LIBS_rv32im += \
-      $(TOCK_USERLAND_BASE_DIR)/newlib/rv32/rv32im/libc.a\
-      $(TOCK_USERLAND_BASE_DIR)/newlib/rv32/rv32im/libm.a
-
-override LEGACY_LIBS_rv32imc += $(LEGACY_LIBS_rv32im)
-
-override LEGACY_LIBS_rv32imac += \
-      $(TOCK_USERLAND_BASE_DIR)/newlib/rv32/rv32imac/libc.a\
-      $(TOCK_USERLAND_BASE_DIR)/newlib/rv32/rv32imac/libm.a
+override LINK_LIBS_rv32imac += \
+      $(LIBCPP_BASE_DIR)/riscv/rv32imac/ilp32/libstdc++-v3/src/.libs/libstdc++.a \
+      $(LIBCPP_BASE_DIR)/riscv/rv32imac/ilp32/libstdc++-v3/libsupc++/.libs/libsupc++.a \
+      $(LIBCPP_BASE_DIR)/riscv/rv32imac/ilp32/libgcc/libgcc.a \
+      $(NEWLIB_BASE_DIR)/riscv/rv32imac/ilp32/newlib/libc.a \
+      $(NEWLIB_BASE_DIR)/riscv/rv32imac/ilp32/newlib/libm.a
 
 
 ################################################################################
@@ -380,27 +380,33 @@ override CPPFLAGS_cortex-m4 += $(CPPFLAGS_cortex-m) \
 override CPPFLAGS_cortex-m7 += $(CPPFLAGS_cortex-m) \
       -mcpu=cortex-m7
 
-# Single-arch libraries, to be phased out
-override LEGACY_LIBS_cortex-m += \
-      $(TOCK_USERLAND_BASE_DIR)/libc++/cortex-m/libstdc++.a\
-      $(TOCK_USERLAND_BASE_DIR)/libc++/cortex-m/libsupc++.a\
-      $(TOCK_USERLAND_BASE_DIR)/libc++/cortex-m/libgcc.a
+override LINK_LIBS_cortex-m0 += \
+      $(LIBCPP_BASE_DIR)/thumb/v6-m/nofp/libstdc++-v3/src/.libs/libstdc++.a \
+      $(LIBCPP_BASE_DIR)/thumb/v6-m/nofp/libstdc++-v3/libsupc++/.libs/libsupc++.a \
+      $(LIBCPP_BASE_DIR)/thumb/v6-m/nofp/libgcc/libgcc.a \
+      $(NEWLIB_BASE_DIR)/thumb/v6-m/nofp/newlib/libc.a \
+      $(NEWLIB_BASE_DIR)/thumb/v6-m/nofp/newlib/libm.a
 
-override LEGACY_LIBS_cortex-m0 += $(LEGACY_LIBS_cortex-m) \
-      $(TOCK_USERLAND_BASE_DIR)/newlib/cortex-m/v6-m/libc.a\
-      $(TOCK_USERLAND_BASE_DIR)/newlib/cortex-m/v6-m/libm.a
+override LINK_LIBS_cortex-m3 += \
+      $(LIBCPP_BASE_DIR)/thumb/v7-m/nofp/libstdc++-v3/src/.libs/libstdc++.a \
+      $(LIBCPP_BASE_DIR)/thumb/v7-m/nofp/libstdc++-v3/libsupc++/.libs/libsupc++.a \
+      $(LIBCPP_BASE_DIR)/thumb/v7-m/nofp/libgcc/libgcc.a \
+      $(NEWLIB_BASE_DIR)/thumb/v7-m/nofp/newlib/libc.a \
+      $(NEWLIB_BASE_DIR)/thumb/v7-m/nofp/newlib/libm.a
 
-override LEGACY_LIBS_cortex-m3 += $(LEGACY_LIBS_cortex-m) \
-      $(TOCK_USERLAND_BASE_DIR)/newlib/cortex-m/v7-m/libc.a\
-      $(TOCK_USERLAND_BASE_DIR)/newlib/cortex-m/v7-m/libm.a
+override LINK_LIBS_cortex-m4 += \
+      $(LIBCPP_BASE_DIR)/thumb/v7e-m/nofp/libstdc++-v3/src/.libs/libstdc++.a \
+      $(LIBCPP_BASE_DIR)/thumb/v7e-m/nofp/libstdc++-v3/libsupc++/.libs/libsupc++.a \
+      $(LIBCPP_BASE_DIR)/thumb/v7e-m/nofp/libgcc/libgcc.a \
+      $(NEWLIB_BASE_DIR)/thumb/v7e-m/nofp/newlib/libc.a \
+      $(NEWLIB_BASE_DIR)/thumb/v7e-m/nofp/newlib/libm.a
 
-override LEGACY_LIBS_cortex-m4 += $(LEGACY_LIBS_cortex-m) \
-      $(TOCK_USERLAND_BASE_DIR)/newlib/cortex-m/v7-m/libc.a\
-      $(TOCK_USERLAND_BASE_DIR)/newlib/cortex-m/v7-m/libm.a
-
-override LEGACY_LIBS_cortex-m7 += $(LEGACY_LIBS_cortex-m) \
-      $(TOCK_USERLAND_BASE_DIR)/newlib/cortex-m/v7-m/libc.a\
-      $(TOCK_USERLAND_BASE_DIR)/newlib/cortex-m/v7-m/libm.a
+override LINK_LIBS_cortex-m7 += \
+      $(LIBCPP_BASE_DIR)/thumb/v7e-m/nofp/libstdc++-v3/src/.libs/libstdc++.a \
+      $(LIBCPP_BASE_DIR)/thumb/v7e-m/nofp/libstdc++-v3/libsupc++/.libs/libsupc++.a \
+      $(LIBCPP_BASE_DIR)/thumb/v7e-m/nofp/libgcc/libgcc.a \
+      $(NEWLIB_BASE_DIR)/thumb/v7e-m/nofp/newlib/libc.a \
+      $(NEWLIB_BASE_DIR)/thumb/v7e-m/nofp/newlib/libm.a
 
 # Cortex-M needs an additional OBJDUMP flag.
 override OBJDUMP_FLAGS_cortex-m  += --disassembler-options=force-thumb
@@ -572,9 +578,7 @@ ifneq ($(V),)
   $(info Config:)
   $(info GIT: $(shell git describe --always 2>&1))
   $(info $(TOOLCHAIN_cortex-m4)$(CC_cortex-m4) --version: $(shell $(TOOLCHAIN_cortex-m4)$(CC_cortex-m4) --version))
-ifneq ($(RISCV),)
   $(info $(TOOLCHAIN_rv32i)$(CC_rv32i) --version: $(shell $(TOOLCHAIN_rv32i)$(CC_rv32i) --version))
-endif
   $(info LAYOUT=$(LAYOUT))
   $(info MAKEFLAGS=$(MAKEFLAGS))
   $(info PACKAGE_NAME=$(PACKAGE_NAME))
