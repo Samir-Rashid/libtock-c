@@ -19,6 +19,10 @@ if ! arm-none-eabi-gcc --print-multi-lib | grep -q 'v7e-m/nofp'; then
   exit -1
 fi
 
+# Need to remove the `v5te` targets from the output of `-print-multi-lib` (if
+# they exist) as they are ancient and fail to compile.
+sed -i.bak 's/--print-multi-lib/--print-multi-lib | grep -v v5te/' $NEWLIB_SRC_DIR/config-ml.in
+
 $NEWLIB_SRC_DIR/configure --target=arm-none-eabi \
   --disable-newlib-supplied-syscalls \
   --disable-nls \
