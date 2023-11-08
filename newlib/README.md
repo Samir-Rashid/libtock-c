@@ -42,9 +42,13 @@ that folder to the `libtock-c/lib` directory to use the new version of newlib.
 
 ### Docker
 
-There are various ways to use a Dockerfile, but some simple steps to build newlib using the Dockerfile look like:
+There are various ways to use a Dockerfile, but some simple steps to build
+newlib using the Dockerfile look like:
 
 ```bash
+NEWLIB=4.2.0.20211231
 cd libtock-c/newlib
 docker build -t libtock-c-newlib .
+id=$(docker create libtock-c-newlib)
+docker cp $id:/libtock-c/newlib/libtock-newlib-$NEWLIB.zip - > libtock-newlib-$NEWLIB.zip
 ```

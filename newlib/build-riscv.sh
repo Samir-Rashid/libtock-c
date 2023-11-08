@@ -1,21 +1,7 @@
 #!/usr/bin/env bash
 
 NEWLIB_SRC_DIR=$1
-
-# Choose the target based on what toolchain is installed.
-if command -v riscv64-none-elf-gcc &> /dev/null
-then
-    TARGET=riscv64-none-elf
-elif command -v riscv32-none-elf-gcc &> /dev/null
-then
-    TARGET=riscv32-none-elf
-elif command -v riscv64-elf-gcc &> /dev/null
-then
-    TARGET=riscv64-elf
-else
-    TARGET=riscv64-unknown-elf
-fi
-
+TARGET=$2
 
 $NEWLIB_SRC_DIR/configure --target=$TARGET \
   --disable-newlib-supplied-syscalls \
