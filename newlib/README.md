@@ -21,12 +21,16 @@ machine. Specifically, we are aware of two issues that can arise:
    then using those libraries with an older toolchain (e.g. gcc 10) seems to
    cause failures.
 
+To try to ensure reproducibility, we include a Dockerfile that should be able to
+build the same newlib that we distribute as part of the libtock-c build system.
 
 ### Simple Directions
 
-In the `Makefile`, edit the variable `NEWLIB_VERSION` with the version
-you want to compile. The releases are listed
-[here](http://sourceware.org/pub/newlib/).
+If you want to build and package newlib locally you can use the provided
+`Makefile`.
+
+In the `Makefile`, edit the variable `NEWLIB_VERSION` with the version you want
+to compile. The releases are listed [here](http://sourceware.org/pub/newlib/).
 
 Then:
 
@@ -36,4 +40,11 @@ When the build finishes (it takes a while), a zip folder named
 `libtock-newlib-<version>.zip` will contain the built libraries. You can move
 that folder to the `libtock-c/lib` directory to use the new version of newlib.
 
+### Docker
 
+There are various ways to use a Dockerfile, but some simple steps to build newlib using the Dockerfile look like:
+
+```bash
+cd libtock-c/newlib
+docker build -t libtock-c-newlib .
+```
