@@ -2,8 +2,7 @@ NEWLIB_VERSION ?= 4.2.0.20211231
 
 all: rebuild-newlib
 
-# RISC-V toolchains are not standardized yet, so we need to determine which is
-# installed.
+# Determine which RISC-V toolchain is installed.
 ifneq (,$(shell which riscv64-none-elf-gcc 2>/dev/null))
   TOOLCHAIN_rv32i := riscv64-none-elf
 else ifneq (,$(shell which riscv32-none-elf-gcc 2>/dev/null))

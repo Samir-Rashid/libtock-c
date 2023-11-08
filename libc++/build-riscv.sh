@@ -1,22 +1,19 @@
 #!/usr/bin/env bash
 
 GCC_SRC_DIR=$1
+LIBC_INCLUDE_PATH=$2
+TARGET=$3
 
-NEWLIB_VERSION=4.3.0.20230120
-
-SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
-NEWLIB_INCLUDE_PATH=$SCRIPTPATH/../newlib/newlib-$NEWLIB_VERSION/newlib/libc/include
-
-if [[ ! -e $NEWLIB_INCLUDE_PATH ]]; then
-  echo "ERROR: Missing NEWLIB_INCLUDE_PATH, expected"
-  echo "       $NEWLIB_INCLUDE_PATH"
+if [[ ! -e $LIBC_INCLUDE_PATH ]]; then
+  echo "ERROR: Missing LIBC_INCLUDE_PATH, expected"
+  echo "       $LIBC_INCLUDE_PATH"
   echo ""
   echo "Ensure that appropriate newlib version has been built before building libc++"
   exit 1
 fi
 
-export CFLAGS_FOR_TARGET="-g -Os -ffunction-sections -fdata-sections -isystem $NEWLIB_INCLUDE_PATH"
-export CXXFLAGS_FOR_TARGET="-g -Os -ffunction-sections -fdata-sections -isystem $NEWLIB_INCLUDE_PATH"
+export CFLAGS_FOR_TARGET="-g -Os -ffunction-sections -fdata-sections -isystem $LIBC_INCLUDE_PATH"
+export CXXFLAGS_FOR_TARGET="-g -Os -ffunction-sections -fdata-sections -isystem $LIBC_INCLUDE_PATH"
 
 if gcc --version | grep -q clang; then
   echo "$(tput bold)System gcc is clang. Overriding with gcc-13"
@@ -33,20 +30,6 @@ if gcc --version | grep -q clang; then
   extra_with="$gmp $mpfr $mpc $isl"
 else
   extra_with=""
-fi
-
-# Choose the target based on what toolchain is installed.
-if command -v riscv64-none-elf-gcc &> /dev/null
-then
-  TARGET=riscv64-none-elf
-elif command -v riscv32-none-elf-gcc &> /dev/null
-then
-  TARGET=riscv32-none-elf
-elif command -v riscv64-elf-gcc &> /dev/null
-then
-  TARGET=riscv64-elf
-else
-  TARGET=riscv64-unknown-elf
 fi
 
 $GCC_SRC_DIR/configure \
