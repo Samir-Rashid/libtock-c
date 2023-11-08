@@ -17,13 +17,13 @@ rebuild-gcc: gcc-$(GCC_VERSION)
 	@echo ""
 	@mkdir -p gcc-arm-$(GCC_VERSION)-out
 	@echo "Entering directory gcc-arm-$(GCC_VERSION)-out"
-	cd gcc-arm-$(GCC_VERSION)-out; sh ../build-arm.sh ../$<
+	cd gcc-arm-$(GCC_VERSION)-out; ../build-arm.sh ../$<
 	@echo ""
 	@echo "=== BEGINNING RISC-V BUILD =========================="
 	@echo ""
 	@mkdir -p gcc-riscv-$(GCC_VERSION)-out
 	@echo "Entering directory gcc-riscv-$(GCC_VERSION)-out"
-	cd gcc-rv32i-$(GCC_VERSION)-out; sh ../build-riscv.sh ../$<
+	cd gcc-rv32i-$(GCC_VERSION)-out; ../build-riscv.sh ../$<
 	@echo ""
 	@echo "=== PACKAGING LIBC++ ARTIFACTS =========================="
 	@echo ""

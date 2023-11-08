@@ -18,14 +18,14 @@ rebuild-newlib: newlib-$(NEWLIB_VERSION)
 	@rm -rf newlib-arm-$(NEWLIB_VERSION)-out
 	@mkdir -p newlib-arm-$(NEWLIB_VERSION)-out
 	@echo "Entering directory newlib-arm-$(NEWLIB_VERSION)-out"
-	cd newlib-arm-$(NEWLIB_VERSION)-out; sh ../build-arm.sh ../$<
+	cd newlib-arm-$(NEWLIB_VERSION)-out; ../build-arm.sh ../$<
 	@echo ""
 	@echo "=== BEGINNING RISC-V BUILD ======================="
 	@echo ""
 	@rm -rf newlib-riscv-$(NEWLIB_VERSION)-out
 	@mkdir -p newlib-riscv-$(NEWLIB_VERSION)-out
 	@echo "Entering directory newlib-riscv-$(NEWLIB_VERSION)-out"
-	cd newlib-riscv-$(NEWLIB_VERSION)-out; sh ../build-riscv.sh ../$<
+	cd newlib-riscv-$(NEWLIB_VERSION)-out; ../build-riscv.sh ../$<
 	@echo ""
 	@echo "=== PACKAGING NEWLIB ARTIFACTS ==================="
 	@echo ""
