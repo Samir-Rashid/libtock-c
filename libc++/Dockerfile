@@ -3,7 +3,7 @@ FROM ubuntu:22.04
 
 LABEL maintainer="Tock Project Developers <tock-dev@googlegroups.com>"
 LABEL version="0.1"
-LABEL description="Dockerfile to build libtock-c newlib."
+LABEL description="Dockerfile to build libtock-c libc++."
 
 # Disable Prompt During Packages Installation
 ARG DEBIAN_FRONTEND=noninteractive
@@ -18,7 +18,7 @@ RUN apt install -y git build-essential wget rsync zip
 
 # Clone the libtock-c source so we can use the build scripts
 RUN git clone https://github.com/tock/libtock-c --depth 1 -b make-precompiled
-RUN cd libtock-c && git fetch && git checkout a6a395ee7d9c4c55749c3008cb6b005eec18f8fa
+RUN cd libtock-c && git fetch && git checkout 60bbb1453ab07cb60c94f0557a70c0a7a25da643
 
 # Actually build the toolchain
-RUN cd libtock-c/newlib && make
+RUN cd libtock-c/libc++ && make
