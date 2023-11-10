@@ -29,7 +29,7 @@ SIZE := -size
 
 # Library versions.
 NEWLIB_VERSION ?= 4.2.0.20211231
-LIBCPP_VERSION ?= 12.2.0
+LIBCPP_VERSION ?= 11.2.0
 
 # Set default region sizes for process memory requirements.
 STACK_SIZE       ?= 2048
