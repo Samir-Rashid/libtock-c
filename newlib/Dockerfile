@@ -18,7 +18,7 @@ RUN apt install -y git build-essential wget rsync zip
 
 # Clone the libtock-c source so we can use the build scripts
 RUN git clone https://github.com/tock/libtock-c --depth 1 -b make-precompiled
-RUN cd libtock-c && git fetch && git checkout a6a395ee7d9c4c55749c3008cb6b005eec18f8fa
+RUN cd libtock-c && git fetch && git checkout 818c828338b2a349e4d3e8969f6ccc0817bab470
 
 # Actually build the toolchain
 RUN cd libtock-c/newlib && make

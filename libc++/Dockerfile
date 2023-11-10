@@ -16,9 +16,12 @@ RUN apt install -y gcc-arm-none-eabi gcc-riscv64-unknown-elf
 # Install needed tools
 RUN apt install -y git build-essential wget rsync zip
 
+# Install needed library
+RUN apt install libmpc-dev file
+
 # Clone the libtock-c source so we can use the build scripts
 RUN git clone https://github.com/tock/libtock-c --depth 1 -b make-precompiled
-RUN cd libtock-c && git fetch && git checkout 60bbb1453ab07cb60c94f0557a70c0a7a25da643
+RUN cd libtock-c && git fetch && git checkout 818c828338b2a349e4d3e8969f6ccc0817bab470
 
 # Actually build the toolchain
 RUN cd libtock-c/libc++ && make
