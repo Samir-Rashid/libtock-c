@@ -37,7 +37,7 @@ $GCC_SRC_DIR/configure \
   --host=x86_64-linux-gnu \
   --target=$TARGET \
   --with-newlib $extra_with \
-  --with-headers=$NEWLIB_INCLUDE_PATH \
+  --with-headers=$LIBC_INCLUDE_PATH \
   --enable-languages="c c++" \
 
 make -j$(nproc)

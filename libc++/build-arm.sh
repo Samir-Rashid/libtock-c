@@ -35,7 +35,7 @@ fi
 # `--with-multilib-list=@t-tock` flag. Due to how the configure process works,
 # the file has to be in the gcc/config/arm folder.
 cat << EOF > $GCC_SRC_DIR/gcc/config/arm/t-tock
-For Tock!!
+# For Tock!!
 
 MULTILIB_OPTIONS     =
 MULTILIB_DIRNAMES    =
@@ -67,7 +67,7 @@ $GCC_SRC_DIR/configure \
   --target=arm-none-eabi \
   --with-multilib-list=@t-tock \
   --with-newlib $extra_with \
-  --with-headers=$NEWLIB_INCLUDE_PATH \
+  --with-headers=$LIBC_INCLUDE_PATH \
   --enable-languages="c c++" \
 
 make -j$(nproc)

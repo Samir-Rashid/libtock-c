@@ -51,7 +51,7 @@ rebuild-gcc: gcc-$(GCC_VERSION)
 	@echo ""
 	@mkdir -p gcc-riscv-$(GCC_VERSION)-out
 	@echo "Entering directory gcc-riscv-$(GCC_VERSION)-out"
-	cd gcc-rv32i-$(GCC_VERSION)-out; ../build-riscv.sh ../$< $(NEWLIB_INCLUDE_PATH) $(TOOLCHAIN_rv32i)
+	cd gcc-riscv-$(GCC_VERSION)-out; ../build-riscv.sh ../$< $(NEWLIB_INCLUDE_PATH) $(TOOLCHAIN_rv32i)
 	@echo ""
 	@echo "=== PACKAGING LIBC++ ARTIFACTS =========================="
 	@echo ""
