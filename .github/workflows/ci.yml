@@ -27,7 +27,7 @@ jobs:
       - name: setup-riscv-toolchain
         run: sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get install -y gcc-riscv64-unknown-elf
       - name: random
-        run: curl https://sh.rustup.rs -sSf | sh && source "$HOME/.cargo/env"
+        run: curl https://sh.rustup.rs -sSfy | sh && source "$HOME/.cargo/env"
 # PATH=$PATH:/root/gcc-arm-none-eabi-10.2020.4-linux/gcc-arm-none-eabi-10-2020-q4-major/bin/
 # PATH=$PATH:/root/gcc-riscv64-unknown-elf-8.3.0-ubuntu/bin
       - name: ci-build
