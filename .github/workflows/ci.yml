@@ -25,7 +25,8 @@ jobs:
         with:
           release: '10-2020-q4' # The arm-none-eabi-gcc release to use.
       - name: setup-riscv-toolchain
-        run: sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get install -y gcc-riscv64-unknown-elf
+        run: sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get install -y gcc-riscv64-unknown-elf && sudo apt-get install -y libnewlib-arm-none-eabi
+
       - name: random
         run: curl https://sh.rustup.rs -sSf | sh -s -- -y && source "$HOME/.cargo/env"
 # PATH=$PATH:/root/gcc-arm-none-eabi-10.2020.4-linux/gcc-arm-none-eabi-10-2020-q4-major/bin/
