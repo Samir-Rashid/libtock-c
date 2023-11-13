@@ -1,4 +1,4 @@
-USB Security Key Application
+USB Security Key Application :ok:
 ----------------------------
 
 This application implements a basic
