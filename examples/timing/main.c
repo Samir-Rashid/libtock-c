@@ -31,17 +31,21 @@ void start_cycle_counter(void) {
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
-uint32_t get_cycle_count(void) {
+inline uint32_t get_cycle_count(void) {
     return DWT->CYCCNT;
 }
 
-void some_function() {
+inline void some_function() {
     // Your function code
     for (int i = 0; i < 100; i++) {
         printf("Hello World\n");
     }
 }
 
+// Measure the cycles of a given `some_function`.
+// There is some variation in cycle count, not sure why.
+// Expected output:
+//   Cycle count: 1
 int main(void) {
     start_cycle_counter();
     uint32_t start_cycles = get_cycle_count();

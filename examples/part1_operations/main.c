@@ -1,0 +1,89 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <libtock/kernel/ipc.h>
+#include <libtock/tock.h>
+#include <core_cm4.h>
+
+// Benchmarking boilerplate macro
+#define BENCHMARK(code_block) \
+    uint32_t start_cycles = get_cycle_count(); \
+    code_block; \
+    uint32_t end_cycles = get_cycle_count(); \
+    uint32_t cycle_count = end_cycles - start_cycles; \
+    printf("%s: Cycle count: %lu\n", __FUNCTION__, cycle_count)
+
+void start_cycle_counter(void) {
+    if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk)) {
+        CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    }
+    DWT->CYCCNT = 0; 
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+inline uint32_t get_cycle_count(void) {
+    return DWT->CYCCNT;
+}
+
+/****** Measurement overhead ******/
+
+// overhead of reading time
+void read_time() {
+    BENCHMARK({});
+}
+
+// overhead of using a loop to measure many iterations of an operation
+#define NUM_LOOPS 1000
+void loop_overhead() {
+    uint32_t cycle_counts[NUM_LOOPS] = {0};
+
+    for (int i = 0; i < NUM_LOOPS; i++) {
+        uint32_t start_cycles = get_cycle_count();
+        
+        // do nothing
+
+        uint32_t end_cycles = get_cycle_count();
+        uint32_t cycle_count = end_cycles - start_cycles;
+
+        cycle_counts[i] = cycle_count;
+    }
+
+    // calculate average
+    uint32_t total_cycles = 0;
+    for (int i = 0; i < NUM_LOOPS; i++) {
+        total_cycles += cycle_counts[i];
+    }
+
+    uint32_t average_cycles = total_cycles / NUM_LOOPS;
+    printf("Average cycle count: %lu\n", average_cycles);
+}
+
+
+/****** Procedure call overhead ******/
+
+
+
+/****** System call overhead ******/
+
+
+
+/****** Task creation time ******/
+
+
+
+/****** Context switch time ******/
+
+
+
+
+// Measure the cycles of a given `some_function`.
+// Run all the tests
+int main(void) {
+    start_cycle_counter();
+    
+    read_time();
+    BENCHMARK(loop_overhead());
+}
