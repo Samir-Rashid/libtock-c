@@ -134,7 +134,7 @@ void page_sized_flash_load() {
 int main(void) {
     start_cycle_counter();
     
-    BENCHMARK(ram_access_time());
-    BENCHMARK(memory_bandwidth_reading());
-    memory_bandwidth_writing();
+    // BENCHMARK(ram_access_time());
+    // BENCHMARK(memory_bandwidth_reading());
+    // memory_bandwidth_writing();
 }
