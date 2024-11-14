@@ -9,6 +9,8 @@
 #include <core_cm4.h>
 
 // Benchmarking boilerplate macro
+// TODO: do I need to indicate the register as volatile?
+//       do I need a memory barrier between the two samples?
 #define BENCHMARK(code_block) \
     { uint32_t start_cycles = get_cycle_count(); \
     code_block; \
@@ -125,6 +127,8 @@ void process_creation_overhead() {
 
 // Measure the cycles of a given `some_function`.
 // Run all the tests
+// NOTE: there is only one hardware counter, so BENCHMARKING a function
+// with internal BENCHMARKS is incorrect.
 int main(void) {
     start_cycle_counter();
     
