@@ -140,7 +140,7 @@ static int test_flash(uint8_t* readbuf, uint8_t* writebuf, size_t size, size_t o
 void page_sized_flash_load() {
     // There is no virtual memory and thus no page size.
     // Instead, we measure a "page"-sized load of 4k.
-    uint32_t PAGE_SIZE = 10;
+    uint32_t PAGE_SIZE = 4096;
     uint8_t readbuf[PAGE_SIZE];
     uint8_t writebuf[PAGE_SIZE];
     BENCHMARK(test_flash(readbuf, writebuf, PAGE_SIZE, 0, PAGE_SIZE));
