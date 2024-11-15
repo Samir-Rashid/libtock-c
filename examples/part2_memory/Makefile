@@ -1,4 +1,6 @@
 # Makefile for user application
+STACK_SIZE = 16384
+APP_HEAP_SIZE = 16384
 
 # Specify this directory relative to the current application.
 TOCK_USERLAND_BASE_DIR = ../..
@@ -11,5 +13,5 @@ C_SRCS := $(wildcard *.c)
 
 ### See compilation.md for details ###
 # add the headers for hardware registers (DWT) and max optimizations
-override CFLAGS += -I../timing/ -O3	
+override CFLAGS += -I../timing/ -O0 
 include $(TOCK_USERLAND_BASE_DIR)/AppMakefile.mk
