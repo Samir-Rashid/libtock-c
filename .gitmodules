@@ -10,3 +10,6 @@
 [submodule "RadioLib/RadioLib"]
 	path = RadioLib/RadioLib
 	url = https://github.com/jgromes/RadioLib.git
+[submodule "littlefs-project/littlefs"]
+	path = liblittlefs/littlefs
+	url = https://github.com/littlefs-project/littlefs.git
