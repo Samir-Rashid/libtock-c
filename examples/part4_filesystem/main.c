@@ -79,7 +79,7 @@ const struct lfs_config cfg = {
     .read_size = 16,
     .prog_size = 16,
     .block_size = 512,
-    .block_count = 8, // TODO: this must match the kernel assigned flash size
+    .block_count = 8, // NOTE: this must match the kernel assigned flash size
     .cache_size = 16,
     .lookahead_size = 16,
     .block_cycles = 500,
@@ -111,30 +111,93 @@ inline uint32_t get_cycle_count(void) {
 }
 
 /****** Filesystem ******/
+// sizes of the files to be created (in bytes)
+int file_sizes[] = {1, 10, 100, 500, 1000, 2000, 5000, 10000};
 
-void file_cache_size() {
+// make files of various sizes to test with. Only needs to be run once
+void create_files() {
+    for (int i = 0; i < (sizeof(file_sizes) / sizeof(file_sizes[0])); i++) {
+        // create the files
+        char filename[20];
+        sprintf(filename, "file_%d.txt", file_sizes[i]);
+        lfs_file_open(&lfs, &file, filename, LFS_O_WRONLY | LFS_O_CREAT);
 
+        // write nonzero data so the fs doesn't do any optimizations
+        uint8_t data[file_sizes[i]];
+        memset(data, 'A', file_sizes[i]);
+        lfs_file_write(&lfs, &file, data, file_sizes[i]);
+
+        lfs_file_close(&lfs, &file); // need to write it out to disk!
+    }
 }
 
-void file_read_time() {
+// take average read time for each `file_sizes`
+void file_cache_size() {
+    for (int i = 0; i < (sizeof(file_sizes) / sizeof(file_sizes[0])); i++) {
+        // reconstruct filenames
+        char filename[20];
+        sprintf(filename, "file_%d.txt", file_sizes[i]);
+        lfs_file_open(&lfs, &file, filename, LFS_O_RDONLY);
 
+        uint8_t data[file_sizes[i]];
+        lfs_file_read(&lfs, &file, data, file_sizes[i]);
+        lfs_file_close(&lfs, &file);
+
+        // calculate the average read time
+        uint32_t total_cycles = 0;
+        for (int j = 0; j < 10; j++) {
+            start_cycle_counter();
+            lfs_file_open(&lfs, &file, filename, LFS_O_RDONLY);
+            lfs_file_read(&lfs, &file, data, file_sizes[i]);
+            lfs_file_close(&lfs, &file);
+            total_cycles += get_cycle_count();
+        }
+        uint32_t average_cycles = total_cycles / 10;
+
+        printf("File size: %d bytes, Average read time: %lu cycles\n", file_sizes[i], average_cycles);
+    }
+}
+
+// sequential and random access as a function of file size (average per-block read time)
+void file_read_time() {
+    for (int i = 0; i < (sizeof(file_sizes) / sizeof(file_sizes[0])); i++) {
+        int file_size = file_sizes[i];
+        // reconstruct filenames
+        char filename[20];
+        sprintf(filename, "file_%d.txt", file_size);
+        lfs_file_open(&lfs, &file, filename, LFS_O_RDONLY);
+
+        uint8_t data[file_size];
+        lfs_file_read(&lfs, &file, data, file_size);
+        lfs_file_close(&lfs, &file);
+
+        // calculate the average per-block read time
+        uint32_t total_cycles = 0;
+        for (int j = 0; j < file_size; j += cfg.block_size) {
+            start_cycle_counter();
+            lfs_file_open(&lfs, &file, filename, LFS_O_RDONLY);
+            lfs_file_seek(&lfs, &file, j, LFS_SEEK_SET);
+            lfs_file_read(&lfs, &file, data, cfg.block_size);
+            lfs_file_close(&lfs, &file);
+            total_cycles += get_cycle_count();
+        }
+        uint32_t average_cycles = total_cycles / (file_size / cfg.block_size); // cycles per block
+
+        printf("File size: %d bytes, Average per-block read time: %lu cycles\n", file_sizes[i], average_cycles);
+    }
 }
 
 // TODO: can kind of do this one?
 void remote_file_read_time() {
-
+    printf("do this on ieng6 machine\n");
 }
 
 // TODO: cannot do this one
 void contention() {
-
+    printf("TODO: contention needs more apps\n");
 }
 
-// Measure the cycles of a given `some_function`.
-// Run all the tests
-// NOTE: there is only one hardware counter, so BENCHMARKING a function
-// with internal BENCHMARKS is incorrect.
-int main(void) {
+void filesystem_initialization() {
     // mount the filesystem
     printf("mounting fs\n");
     int err = lfs_mount(&lfs, &cfg);
@@ -146,7 +209,9 @@ int main(void) {
         lfs_format(&lfs, &cfg);
         lfs_mount(&lfs, &cfg);
     }
+}
 
+void boot_count() {
     // read current count
     printf("read count\n");
     uint32_t boot_count = 0;
@@ -163,9 +228,30 @@ int main(void) {
     printf("close fs\n");
     lfs_file_close(&lfs, &file);
 
-    // release any resources we were using
-    lfs_unmount(&lfs);
-
     // print the boot count
     printf("boot_count: %ld\n", boot_count);    
+}
+
+void filesystem_cleanup() {
+    // release any resources we were using
+    lfs_unmount(&lfs);
+}
+
+// Measure the cycles of a given `some_function`.
+// Run all the tests
+// NOTE: there is only one hardware counter, so BENCHMARKING a function
+// with internal BENCHMARKS is incorrect.
+int main(void) {
+    filesystem_initialization();
+    boot_count();
+    filesystem_cleanup();
+
+    if (true) create_files();
+
+    start_cycle_counter(); // TODO: watch out for overflow on slow ops!
+
+    file_cache_size();
+    file_read_time();
+    remote_file_read_time();
+    contention();
 }
