@@ -9,6 +9,7 @@
 #include <core_cm4.h>
 #include <libtock-sync/storage/nonvolatile_storage.h>
 #include <lfs.h>
+// #include <lfs_util.h>
 
 /****** Filesystem Configuration ******/
 // We port [LittleFS](https://github.com/littlefs-project/littlefs) as the filesystem to benchmark.
@@ -18,14 +19,48 @@
 lfs_t lfs;
 lfs_file_t file;
 
+int shim_read(const struct lfs_config *c, lfs_block_t block,
+            lfs_off_t off, void *buffer, lfs_size_t size) {
+    int length_read = 0;
+    int ret = libtocksync_nonvolatile_storage_read(block * c->block_size + off, size, buffer, size, &length_read);
+    if (ret != RETURNCODE_SUCCESS) {
+        printf("\tERROR calling read\n");
+        return ret;
+    }
+    return length_read;
+}
+
+int shim_prog(const struct lfs_config *c, lfs_block_t block,
+            lfs_off_t off, const void *buffer, lfs_size_t size) {
+    // TODO: does this have to clear the block?
+    int length_written = 0;
+    int ret = libtocksync_nonvolatile_storage_write(block * c->block_size + off, size, buffer, size, &length_written);
+    if (ret != RETURNCODE_SUCCESS) {
+        printf("\tERROR calling write\n");
+        return ret;
+    }
+    return length_written;
+}
+
+int shim_erase(const struct lfs_config *c, lfs_block_t block,
+            lfs_off_t off, const void *buffer, lfs_size_t size) {
+    uint8_t zero_buffer[size];
+    memset(zero_buffer, 0, size);
+    return shim_prog(c, block, off, buffer, size);
+}
+
+int shim_sync(const struct lfs_config *c) {
+    return 0;
+}
+
 // configuration of the filesystem is provided by this struct
 const struct lfs_config cfg = {
     // block device operations
     // TODO: these fn pointers need to match the following signatures <https://github.com/littlefs-project/littlefs/blob/d01280e64934a09ba16cac60cf9d3a37e228bb66/lfs.h#L157>
-    .read  = libtocksync_nonvolatile_storage_read,
-    .prog  = libtocksync_nonvolatile_storage_write,
-    .erase = libtocksync_nonvolatile_storage_read, // TODO
-    .sync  = libtocksync_nonvolatile_storage_read, // TODO
+    .read  = shim_read,
+    .prog  = shim_prog,
+    .erase = shim_erase,
+    .sync  = shim_sync,
 
 
     // block device configuration
@@ -115,5 +150,5 @@ int main(void) {
     lfs_unmount(&lfs);
 
     // print the boot count
-    printf("boot_count: %d\n", boot_count);    
+    printf("boot_count: %ld\n", boot_count);    
 }
