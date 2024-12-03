@@ -22,34 +22,46 @@ lfs_file_t file;
 int shim_read(const struct lfs_config *c, lfs_block_t block,
             lfs_off_t off, void *buffer, lfs_size_t size) {
     int length_read = 0;
-    int ret = libtocksync_nonvolatile_storage_read(block * c->block_size + off, size, buffer, size, &length_read);
+    int ret = libtocksync_nonvolatile_storage_read((block * (c->block_size)) + off, size, buffer, size, &length_read);
     if (ret != RETURNCODE_SUCCESS) {
         printf("\tERROR calling read\n");
         return ret;
     }
-    return length_read;
+    printf("read %d of %ld\n", length_read, size);
+    printf("block %ld, off %ld\n", block, off);
+    // return length_read;
+    return 0;
 }
 
 int shim_prog(const struct lfs_config *c, lfs_block_t block,
             lfs_off_t off, const void *buffer, lfs_size_t size) {
     // TODO: does this have to clear the block?
+    /*
+    uint8_t zero_buffer[c->block_size];
+    memset(zero_buffer, 0, c->block_size);
+    libtocksync_nonvolatile_storage_write(block * c->block_size, size, buffer, c->block_size, NULL);
+    */
+
     int length_written = 0;
-    int ret = libtocksync_nonvolatile_storage_write(block * c->block_size + off, size, buffer, size, &length_written);
+    int ret = libtocksync_nonvolatile_storage_write((block * c->block_size) + off, size, buffer, size, &length_written);
     if (ret != RETURNCODE_SUCCESS) {
         printf("\tERROR calling write\n");
         return ret;
     }
-    return length_written;
+    printf("write %d of %ld\n", length_written, size);
+    // return length_written;
+    return 0;
 }
 
-int shim_erase(const struct lfs_config *c, lfs_block_t block,
-            lfs_off_t off, const void *buffer, lfs_size_t size) {
-    uint8_t zero_buffer[size];
-    memset(zero_buffer, 0, size);
-    return shim_prog(c, block, off, buffer, size);
+int shim_erase(const struct lfs_config *c, lfs_block_t block) {
+    printf("erasing %ld\n", block);
+    uint8_t zero_buffer[c->block_size];
+    memset(zero_buffer, 0, c->block_size);
+    return shim_prog(c, block, 0, zero_buffer, c->block_size);
 }
 
 int shim_sync(const struct lfs_config *c) {
+    printf("sync\n");
     return 0;
 }
 
@@ -66,8 +78,8 @@ const struct lfs_config cfg = {
     // block device configuration
     .read_size = 16,
     .prog_size = 16,
-    .block_size = 4096,
-    .block_count = 128, // TODO: this must match the kernel assigned flash size
+    .block_size = 512,
+    .block_count = 8, // TODO: this must match the kernel assigned flash size
     .cache_size = 16,
     .lookahead_size = 16,
     .block_cycles = 500,
@@ -124,26 +136,31 @@ void contention() {
 // with internal BENCHMARKS is incorrect.
 int main(void) {
     // mount the filesystem
+    printf("mounting fs\n");
     int err = lfs_mount(&lfs, &cfg);
 
     // reformat if we can't mount the filesystem
     // this should only happen on the first boot
     if (err) {
+        printf("reformat fs\n");
         lfs_format(&lfs, &cfg);
         lfs_mount(&lfs, &cfg);
     }
 
     // read current count
+    printf("read count\n");
     uint32_t boot_count = 0;
     lfs_file_open(&lfs, &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
     lfs_file_read(&lfs, &file, &boot_count, sizeof(boot_count));
 
     // update boot count
+    printf("write count\n");
     boot_count += 1;
     lfs_file_rewind(&lfs, &file);
     lfs_file_write(&lfs, &file, &boot_count, sizeof(boot_count));
 
     // remember the storage is not updated until the file is closed successfully
+    printf("close fs\n");
     lfs_file_close(&lfs, &file);
 
     // release any resources we were using
