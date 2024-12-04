@@ -46,6 +46,7 @@ inline uint32_t get_cycle_count(void) {
 }
 
 #define UDP_PORT 1212
+static uint32_t round_trip_time = 0;
 
 static const char UDP_DEST_ADDR[] = "ff03::1";
 static const char UDP_PAYLOAD[]   = "Hello OpenThread World from Tock!";
@@ -99,10 +100,13 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char* argv[])
   uint32_t prev_time = 0;
   uint32_t curr_time = 0;
 
+  start_cycle_counter();
   for ( ;;) {
     // Send UDP packet every 2.5 seconds
     curr_time = otPlatAlarmMilliGetNow();
     if (curr_time - prev_time > 2500) {
+      // TODO: send
+      round_trip_time = get_cycle_count(); // start the timer before tx
       sendUdp(instance);
       prev_time = curr_time;
     }
@@ -154,8 +158,11 @@ void handleUdpReceive(void* aContext, otMessage* aMessage,
   otIp6AddressToString(&sender_addr, buf, sizeof(buf));
 
   otMessageRead(aMessage, otMessageGetOffset(aMessage), buf, sizeof(buf) - 1);
+  round_trip_time = get_cycle_count() - round_trip_time; // end timer after rx
+                                    // previous value was the time the timer started at
   // global_temperature_setpoint = buf[0];
-  printf("poggers I got data %d\n", buf[0]);
+  printf("RTT: %ld\n", round_trip_time);
+  // TODO: recieved
 }
 
 
