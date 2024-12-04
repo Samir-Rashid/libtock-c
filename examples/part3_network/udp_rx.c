@@ -18,6 +18,10 @@
 
 #define UDP_PORT 1212
 
+static const char UDP_DEST_ADDR[] = "ff03::1";
+static const char UDP_PAYLOAD[]   = "sent text";
+static void sendUdp(otInstance* aInstance);
+
 static otUdpSocket sUdpSocket;
 static void initUdp(otInstance* aInstance);
 
@@ -116,6 +120,32 @@ void initUdp(otInstance* aInstance) {
   otUdpBind(aInstance, &sUdpSocket, &listenSockAddr, OT_NETIF_THREAD);
 }
 
+void sendUdp(otInstance* aInstance) {
+  otError error = OT_ERROR_NONE;
+  otMessage*   message;
+  otMessageInfo messageInfo;
+  otIp6Address destinationAddr;
+
+  memset(&messageInfo, 0, sizeof(messageInfo));
+
+  otIp6AddressFromString(UDP_DEST_ADDR, &destinationAddr);
+  messageInfo.mPeerAddr = destinationAddr;
+  messageInfo.mPeerPort = UDP_PORT;
+
+  message = otUdpNewMessage(aInstance, NULL);
+  if (message == NULL) {
+    return;
+  }
+
+  error = otMessageAppend(message, UDP_PAYLOAD, sizeof(UDP_PAYLOAD));
+
+  error = otUdpSend(aInstance, &sUdpSocket, message, &messageInfo);
+
+  if (error != OT_ERROR_NONE && message != NULL) {
+    otMessageFree(message);
+  }
+}
+
 
 void handleUdpReceive(void* aContext, otMessage* aMessage,
                       const otMessageInfo* aMessageInfo) {
@@ -137,6 +167,9 @@ void handleUdpReceive(void* aContext, otMessage* aMessage,
   }
 
   printf("\n");
+
+  // TODO:
+  sendUdp(aContext);
 
 }
 

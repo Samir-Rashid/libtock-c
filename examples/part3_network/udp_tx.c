@@ -115,6 +115,21 @@ void setNetworkConfiguration(otInstance* aInstance) {
 
 }
 
+void handleUdpReceive(void* aContext, otMessage* aMessage,
+                      const otMessageInfo* aMessageInfo) {
+  OT_UNUSED_VARIABLE(aContext);
+  OT_UNUSED_VARIABLE(aMessageInfo);
+  char buf[2];
+
+  const otIp6Address sender_addr = aMessageInfo->mPeerAddr;
+  otIp6AddressToString(&sender_addr, buf, sizeof(buf));
+
+  otMessageRead(aMessage, otMessageGetOffset(aMessage), buf, sizeof(buf) - 1);
+  // global_temperature_setpoint = buf[0];
+  printf("poggers I got data %d\n", buf[0]);
+}
+
+
 void initUdp(otInstance* aInstance) {
   otSockAddr listenSockAddr;
 
@@ -123,7 +138,7 @@ void initUdp(otInstance* aInstance) {
 
   listenSockAddr.mPort = UDP_PORT;
 
-  otUdpOpen(aInstance, &sUdpSocket, NULL, aInstance);
+  otUdpOpen(aInstance, &sUdpSocket, handleUdpReceive, handleUdpReceive);
   otUdpBind(aInstance, &sUdpSocket, &listenSockAddr, OT_NETIF_THREAD);
 }
 
