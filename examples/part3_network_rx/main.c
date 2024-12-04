@@ -15,6 +15,35 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <libtock/kernel/ipc.h>
+#include <libtock/tock.h>
+#include <core_cm4.h>
+#include <libtock-sync/storage/nonvolatile_storage.h>
+
+#define BENCHMARK(code_block) \
+    { uint32_t start_cycles = get_cycle_count(); \
+    code_block; \
+    uint32_t end_cycles = get_cycle_count(); \
+    uint32_t cycle_count = end_cycles - start_cycles; \
+    printf("%s: Cycle count: %lu\n", __FUNCTION__, cycle_count); }
+
+void start_cycle_counter(void) {
+    if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk)) {
+        CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    }
+    DWT->CYCCNT = 0; 
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+inline uint32_t get_cycle_count(void) {
+    return DWT->CYCCNT;
+}
 
 #define UDP_PORT 1212
 

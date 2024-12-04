@@ -5,6 +5,9 @@ APP_HEAP_SIZE = 16384
 # Specify this directory relative to the current application.
 TOCK_USERLAND_BASE_DIR = ../..
 
+# Specify this app depends on the MTD OpenThread library.
+include $(TOCK_USERLAND_BASE_DIR)/libopenthread/libopenthread-mtd.mk
+
 # Which files to compile.
 C_SRCS := $(wildcard *.c)
 
