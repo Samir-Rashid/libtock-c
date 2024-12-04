@@ -27,8 +27,8 @@ int shim_read(const struct lfs_config *c, lfs_block_t block,
         printf("\tERROR calling read\n");
         return ret;
     }
-    printf("read %d of %ld\n", length_read, size);
-    printf("block %ld, off %ld\n", block, off);
+    // printf("read %d of %ld\n", length_read, size);
+    // printf("block %ld, off %ld\n", block, off);
     // return length_read;
     return 0;
 }
@@ -48,20 +48,20 @@ int shim_prog(const struct lfs_config *c, lfs_block_t block,
         printf("\tERROR calling write\n");
         return ret;
     }
-    printf("write %d of %ld\n", length_written, size);
+    // printf("write %d of %ld\n", length_written, size);
     // return length_written;
     return 0;
 }
 
 int shim_erase(const struct lfs_config *c, lfs_block_t block) {
-    printf("erasing %ld\n", block);
+    // printf("erasing %ld\n", block);
     uint8_t zero_buffer[c->block_size];
     memset(zero_buffer, 0, c->block_size);
     return shim_prog(c, block, 0, zero_buffer, c->block_size);
 }
 
 int shim_sync(const struct lfs_config *c) {
-    printf("sync\n");
+    // printf("sync\n");
     return 0;
 }
 
@@ -79,7 +79,7 @@ const struct lfs_config cfg = {
     .read_size = 16,
     .prog_size = 16,
     .block_size = 512,
-    .block_count = 8, // NOTE: this must match the kernel assigned flash size
+    .block_count = 64, // NOTE: this must match the kernel assigned flash size
     .cache_size = 16,
     .lookahead_size = 16,
     .block_cycles = 500,
@@ -112,10 +112,11 @@ inline uint32_t get_cycle_count(void) {
 
 /****** Filesystem ******/
 // sizes of the files to be created (in bytes)
-int file_sizes[] = {1, 10, 100, 500, 1000, 2000, 5000, 10000};
+int file_sizes[] = {1, 10, 100, 500, 510, 520, 600, 1000, 2000, 5000};
 
 // make files of various sizes to test with. Only needs to be run once
 void create_files() {
+    printf("Recreating all the test files. Remember to disable me!\n");
     for (int i = 0; i < (sizeof(file_sizes) / sizeof(file_sizes[0])); i++) {
         // create the files
         char filename[20];
@@ -133,6 +134,7 @@ void create_files() {
 
 // take average read time for each `file_sizes`
 void file_cache_size() {
+    // printf("MEASURING CACHE SIZE\n");
     for (int i = 0; i < (sizeof(file_sizes) / sizeof(file_sizes[0])); i++) {
         // reconstruct filenames
         char filename[20];
@@ -145,16 +147,17 @@ void file_cache_size() {
 
         // calculate the average read time
         uint32_t total_cycles = 0;
-        for (int j = 0; j < 10; j++) {
-            start_cycle_counter();
+        int it = 1; // num iterations
+        for (int j = 0; j < it; j++) {
             lfs_file_open(&lfs, &file, filename, LFS_O_RDONLY);
-            lfs_file_read(&lfs, &file, data, file_sizes[i]);
+            uint32_t start = get_cycle_count();
+            lfs_file_read(&lfs, &file, data, file_sizes[i]); // measure only the reading
+            total_cycles += get_cycle_count() - start;
             lfs_file_close(&lfs, &file);
-            total_cycles += get_cycle_count();
         }
-        uint32_t average_cycles = total_cycles / 10;
+        uint32_t average_cycles = total_cycles / it;
 
-        printf("File size: %d bytes, Average read time: %lu cycles\n", file_sizes[i], average_cycles);
+        printf("File size: %d bytes, Average read time (n= %d): %lu cycles\n", file_sizes[i], it, average_cycles);
     }
 }
 
@@ -246,12 +249,14 @@ int main(void) {
     boot_count();
     filesystem_cleanup();
 
-    if (true) create_files();
+    if (false) create_files();
 
+    filesystem_initialization();
     start_cycle_counter(); // TODO: watch out for overflow on slow ops!
 
-    file_cache_size();
+    // file_cache_size();
     file_read_time();
     remote_file_read_time();
     contention();
+    filesystem_cleanup();
 }
