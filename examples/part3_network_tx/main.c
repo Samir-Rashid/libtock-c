@@ -65,6 +65,8 @@ static void stateChangeCallback(uint32_t flags, void* context);
 static void print_ip_addr(otInstance* instance);
 
 int main(__attribute__((unused)) int argc, __attribute__((unused)) char* argv[]) {
+  start_cycle_counter();
+  uint32_t connection_overhead = get_cycle_count();
   otSysInit(argc, argv);
   otInstance* instance;
   instance = otInstanceInitSingle();
@@ -97,10 +99,12 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char* argv[])
   /* Start the Thread stack (CLI cmd -> thread start) */
   otThreadSetEnabled(instance, true);
 
+  connection_overhead = get_cycle_count() - connection_overhead;
+  printf("Connection overhead: %ld\n", connection_overhead);
+
   uint32_t prev_time = 0;
   uint32_t curr_time = 0;
 
-  start_cycle_counter();
   for ( ;;) {
     // Send UDP packet every 2.5 seconds
     curr_time = otPlatAlarmMilliGetNow();
@@ -119,6 +123,15 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char* argv[])
       yield();
     }
 
+    // teardpwn the node
+    if (true) {
+      uint32_t teardown = get_cycle_count();
+      otInstanceFinalize(instance);
+      teardown = get_cycle_count() - teardown;
+      printf("Teardown: %ld\n", teardown);
+
+      break;
+    }
   }
 
   return 0;
