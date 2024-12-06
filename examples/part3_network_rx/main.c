@@ -48,7 +48,7 @@ inline uint32_t get_cycle_count(void) {
 #define UDP_PORT 1212
 
 static const char UDP_DEST_ADDR[] = "ff03::1";
-static const char UDP_PAYLOAD[]   = "sent text";
+static const char UDP_PAYLOAD[]   = "Hello OpenThread World from Tock!";
 static void sendUdp(otInstance* aInstance);
 
 static otUdpSocket sUdpSocket;
