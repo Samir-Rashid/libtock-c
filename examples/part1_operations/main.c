@@ -99,13 +99,21 @@ void procedure_call_overhead() {
 
 // cost of a minimal system call
 void system_call_overhead() {
-    BENCHMARK(yield());
+    // remember that system calls have a huge variability depending on
+    // if this process has remaining quantum time or not. In the case that
+    // this can return immediately, then the process gets to continue running
+    // and this does not incur any context switch overhead. 
+    for (int i = 0; i < 100; i++) {
+        BENCHMARK(yield_no_wait());
+    }
 }
 
 
 /****** Task creation time ******/
 // time to create and run a process
 void process_creation_overhead() {
+    // lol there is no fork implementation for our libc
+
     // fork and wait on child
     // int pid = fork();
     // if (pid == 0) {
@@ -122,7 +130,9 @@ void process_creation_overhead() {
 
 /****** Context switch time ******/
 
-
+void context_switch_overhead() {
+    // system call yield between two tasks (IPC server/client test)
+}
 
 
 // Measure the cycles of a given `some_function`.
@@ -133,12 +143,12 @@ int main(void) {
     start_cycle_counter();
     
     read_time();
-    BENCHMARK(loop_overhead());
-    BENCHMARK(function_call_overhead());
+    // BENCHMARK(loop_overhead()); // when did this start breaking?
+    // BENCHMARK(function_call_overhead());
 
-    BENCHMARK(procedure_call_overhead());
+    // BENCHMARK(procedure_call_overhead());
     BENCHMARK(system_call_overhead());
 
-    BENCHMARK(process_creation_overhead());
+    // BENCHMARK(process_creation_overhead());
 
 }

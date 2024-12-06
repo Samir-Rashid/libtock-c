@@ -1,6 +1,6 @@
 # Makefile for user application
-STACK_SIZE = 16384
-APP_HEAP_SIZE = 16384
+STACK_SIZE = 32768
+APP_HEAP_SIZE = 32768
 
 # Specify this directory relative to the current application.
 TOCK_USERLAND_BASE_DIR = ../..

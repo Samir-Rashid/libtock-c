@@ -147,12 +147,13 @@ void file_cache_size() {
 
         // calculate the average read time
         uint32_t total_cycles = 0;
-        int it = 1; // num iterations
+        int it = 10; // num iterations
         for (int j = 0; j < it; j++) {
             lfs_file_open(&lfs, &file, filename, LFS_O_RDONLY);
             uint32_t start = get_cycle_count();
             lfs_file_read(&lfs, &file, data, file_sizes[i]); // measure only the reading
             total_cycles += get_cycle_count() - start;
+            printf("print a random byte so stuff does not get compiled out %d\n", data[0]);
             lfs_file_close(&lfs, &file);
         }
         uint32_t average_cycles = total_cycles / it;
@@ -177,9 +178,10 @@ void file_read_time() {
         // calculate the average per-block read time
         uint32_t total_cycles = 0;
         for (int j = 0; j < file_size; j += cfg.block_size) {
+        // for (int j = 0; j < file_size; j += cfg.block_size) {
             start_cycle_counter();
             lfs_file_open(&lfs, &file, filename, LFS_O_RDONLY);
-            lfs_file_seek(&lfs, &file, j, LFS_SEEK_SET);
+            lfs_file_seek(&lfs, &file, file_size - j, LFS_SEEK_SET);
             lfs_file_read(&lfs, &file, data, cfg.block_size);
             lfs_file_close(&lfs, &file);
             total_cycles += get_cycle_count();
@@ -195,9 +197,39 @@ void remote_file_read_time() {
     printf("do this on ieng6 machine\n");
 }
 
-// TODO: cannot do this one
+// Each process reads a distinct file and reports average time to read per block
 void contention() {
-    printf("TODO: contention needs more apps\n");
+    printf("contention needs multiple apps\n");
+    int MY_UNIQUE_ID = 0; // change this for each process
+    
+    int NUM_BLOCKS = 10;
+    int file_size = NUM_BLOCKS * cfg.block_size;
+    // arbitrary file data
+    uint8_t data[file_size];
+    memset(data, 'A', file_size);
+
+    // Define the file name - THIS NEEDS TO BE UNIQUE PER PROCESS!
+    char filename[20];
+    sprintf(filename, "contention_%d.txt", MY_UNIQUE_ID);
+
+    // SETUP: Write the data to the file
+    lfs_file_open(&lfs, &file, filename, LFS_O_WRONLY | LFS_O_CREAT);
+    lfs_file_write(&lfs, &file, data, file_size);
+    lfs_file_close(&lfs, &file);
+
+    // Read the data from the file n times and calculate average read time per block
+    int n = 10; // Number of times to read the data
+    uint32_t total_cycles = 0;
+    for (int i = 0; i < n; i++) {
+        lfs_file_open(&lfs, &file, filename, LFS_O_RDONLY);
+        uint32_t start = get_cycle_count();
+        lfs_file_read(&lfs, &file, data, file_size);
+        total_cycles += get_cycle_count() - start;
+        lfs_file_close(&lfs, &file);
+    }
+    uint32_t average_cycles = total_cycles / n / NUM_BLOCKS;
+
+    printf("Average read time per block: %lu cycles\n", average_cycles);
 }
 
 void filesystem_initialization() {
@@ -246,17 +278,20 @@ void filesystem_cleanup() {
 // with internal BENCHMARKS is incorrect.
 int main(void) {
     filesystem_initialization();
+    if (false) 
+        create_files();
     boot_count();
     filesystem_cleanup();
 
-    if (false) create_files();
 
     filesystem_initialization();
     start_cycle_counter(); // TODO: watch out for overflow on slow ops!
 
     // file_cache_size();
-    file_read_time();
-    remote_file_read_time();
+    // file_read_time();
+    // remote_file_read_time();
     contention();
     filesystem_cleanup();
+
+    return 0;
 }

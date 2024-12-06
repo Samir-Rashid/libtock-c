@@ -8,6 +8,7 @@
 #include <libtock/tock.h>
 #include <core_cm4.h>
 #include <libtock-sync/storage/nonvolatile_storage.h>
+#include <libtock-sync/services/alarm.h>
 
 
 // Benchmarking boilerplate macro
@@ -18,7 +19,8 @@
     code_block; \
     uint32_t end_cycles = get_cycle_count(); \
     uint32_t cycle_count = end_cycles - start_cycles; \
-    printf("%s: Cycle count: %lu\n", __FUNCTION__, cycle_count); }
+    printf(" Cycle count %lu\n",cycle_count); }
+    // printf("%s: Cycle count: %lu\n", __FUNCTION__, cycle_count); }
 
 // Array size is number of bytes
 uint32_t *malloc_random_word_array(int array_size) {
@@ -35,6 +37,8 @@ void start_cycle_counter(void) {
         CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
     }
     DWT->CYCCNT = 0; 
+    // print address 
+    printf("CYCCNT %p\n", &DWT->CYCCNT);
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
@@ -43,6 +47,19 @@ inline uint32_t get_cycle_count(void) {
 }
 
 /****** RAM access time ******/
+
+void stride_buffer(uint32_t* array, int array_size, int stride) {
+    // access every `stride` element. But note, that we want to access
+    // every item in the array. iterating stride only accessses items in `mod` stride.
+    // We must offset the index in the modular arithmetic partitions.
+    volatile int num = 0;
+    for (int partition = 0; partition < stride; partition++) {
+        // we explore every equivalence class
+        for (int index = partition; index < array_size; index += stride) {
+            num = array[index];
+        }
+    }
+}
 
 // access entire array
 void memory_array_latency(int* array, int array_size) {
@@ -153,11 +170,25 @@ void page_sized_flash_load() {
 // NOTE: there is only one hardware counter, so BENCHMARKING a function
 // with internal BENCHMARKS is incorrect.
 int main(void) {
+    // return 0;
     start_cycle_counter();
     
-    BENCHMARK(ram_access_time());
-    printf("Testing memory bandwidth reading\n");
-    BENCHMARK(memory_bandwidth_reading());
-    memory_bandwidth_writing();
-    page_sized_flash_load();
+    // TESTING
+    int max_array_length = 2 << 13;
+    uint32_t* arr = malloc_random_word_array(max_array_length);
+
+    // try different strides and array lengths
+    for (int stride = 1; stride <= 4096; stride *= 2) {
+        for (int array_length = 2 << 1; array_length <= 2 << 13; array_length *= 2) {
+            printf("stride %d, array_length %d,", stride, array_length);
+            BENCHMARK(stride_buffer(arr, array_length, stride));
+            // libtocksync_alarm_delay_ms(1000);
+        }
+    }
+    free(arr);
+    // BENCHMARK(ram_access_time());
+    // printf("Testing memory bandwidth reading\n");
+    // BENCHMARK(memory_bandwidth_reading());
+    // memory_bandwidth_writing();
+    // page_sized_flash_load();
 }
